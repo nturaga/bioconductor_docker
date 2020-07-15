@@ -1,9 +1,9 @@
 # The suggested name for this image is: bioconductor/bioconductor_docker:devel
-FROM rockerdev/rstudio:4.0.0-ubuntu18.04
+FROM rocker/rstudio:4.0.2
 
 ## Set Dockerfile version number
 ## This parameter should be incremented each time there is a change in the Dockerfile
-ARG BIOCONDUCTOR_DOCKER_VERSION=3.11.10
+ARG BIOCONDUCTOR_DOCKER_VERSION=3.11.11
 
 LABEL name="bioconductor/bioconductor_docker" \
       version=$BIOCONDUCTOR_DOCKER_VERSION \
@@ -34,7 +34,7 @@ RUN apt-get update \
 	## Basic deps
 	gdb \
 	libxml2-dev \
-	python-pip \
+	python3-pip \
 	libz-dev \
 	liblzma-dev \
 	libbz2-dev \
@@ -116,15 +116,21 @@ RUN apt-get update \
 
 ## Python installations
 RUN apt-get update \
-	&& apt-get -y --no-install-recommends install python-dev \
-	&& pip install wheel \
+	&& apt-get install -y software-properties-common \
+	&& add-apt-repository universe \
+	&& apt-get update \
+	&& apt-get -y --no-install-recommends install python2 python-dev \
+	&& curl https://bootstrap.pypa.io/get-pip.py --output get-pip.py \
+	&& python2 get-pip.py \
+	&& pip2 install wheel \
 	## Install sklearn and pandas on python
-	&& pip install sklearn \
+	&& pip2 install sklearn \
 	pandas \
 	pyyaml \
 	cwltool \
 	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
+	&& rm -rf /var/lib/apt/lists/* \
+	&& rm -rf get-pip.py
 
 ## FIXME
 ## These two libraries don't install in the above section--WHY?
@@ -145,19 +151,12 @@ RUN cd /tmp \
 	&& ./configure --enable-layout \
 	&& make \
 	&& make install \
-	## xvfb install
-	&& cd /tmp \
-	&& curl -SL https://github.com/just-containers/s6-overlay/releases/download/v1.21.8.0/s6-overlay-amd64.tar.gz | tar -xzC / \
-	&& apt-get update && apt-get install -y --no-install-recommends xvfb \
-	&& mkdir -p /etc/services.d/xvfb/ \
 	## Clean libsbml, and tar.gz files
 	&& rm -rf /tmp/libsbml-5.10.2 \
 	&& rm -rf /tmp/libSBML-5.10.2-core-src.tar.gz \
 	## apt-get clean and remove cache
 	&& apt-get clean \
 	&& rm -rf /var/lib/apt/lists/*
-
-COPY ./deps/xvfb_init /etc/services.d/xvfb/run
 
 RUN echo "R_LIBS=/usr/local/lib/R/host-site-library:\${R_LIBS}" > /usr/local/lib/R/etc/Renviron.site \
 	&& echo "options(defaultPackages=c(getOption('defaultPackages'),'BiocManager'))" >> /usr/local/lib/R/etc/Rprofile.site
