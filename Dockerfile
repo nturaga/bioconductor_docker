@@ -85,6 +85,7 @@ RUN apt-get update \
 	libprotobuf-dev \
 	libpq-dev \
 	libperl-dev \
+	libglpk-dev \
 	## software - perl extentions and modules
 	libarchive-extract-perl \
 	libfile-copy-recursive-perl \
